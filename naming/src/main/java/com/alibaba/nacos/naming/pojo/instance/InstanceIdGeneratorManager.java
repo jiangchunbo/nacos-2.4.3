@@ -63,10 +63,13 @@ public class InstanceIdGeneratorManager {
      * @return InstanceId
      */
     public static String generateInstanceId(Instance instance) {
+        // 决定是用什么 ID 生成器
         String instanceIdGeneratorType = instance.getInstanceIdGenerator();
         if (StringUtils.isBlank(instanceIdGeneratorType)) {
             instanceIdGeneratorType = Constants.DEFAULT_INSTANCE_ID_GENERATOR;
         }
+
+        // 无非两种: simple 和 snowflake
         return INSTANCE.getInstanceIdGenerator(instanceIdGeneratorType).generateInstanceId(instance);
     }
     

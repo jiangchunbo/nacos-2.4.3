@@ -229,6 +229,8 @@ public class Instance implements Serializable {
     }
     
     public String getInstanceIdGenerator() {
+        // 使用何种 ID 生成器： preserved.instance.id.generator
+        // 默认值： simple
         return getMetaDataByKeyWithDefault(PreservedMetadataKeys.INSTANCE_ID_GENERATOR,
                 Constants.DEFAULT_INSTANCE_ID_GENERATOR);
     }
@@ -256,7 +258,11 @@ public class Instance implements Serializable {
         }
         return defaultValue;
     }
-    
+
+
+    /**
+     * 如果没有 Metadata，则使用默认值。不过，万一 Metadata 也没有值呢？不知道他怎么想
+     */
     private String getMetaDataByKeyWithDefault(final String key, final String defaultValue) {
         if (getMetadata() == null || getMetadata().isEmpty()) {
             return defaultValue;

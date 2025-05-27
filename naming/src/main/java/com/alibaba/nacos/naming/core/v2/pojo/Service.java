@@ -49,7 +49,9 @@ public class Service implements Serializable {
         this.group = group;
         this.name = name;
         this.ephemeral = ephemeral;
+        // 版本
         revision = new AtomicLong();
+        // 上次更新时间
         lastUpdatedTime = System.currentTimeMillis();
     }
     

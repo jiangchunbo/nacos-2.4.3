@@ -16,8 +16,6 @@
 
 package com.alibaba.nacos;
 
-import com.alibaba.nacos.api.NacosFactory;
-import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.sys.filter.NacosTypeExcludeFilter;
 import org.springframework.boot.SpringApplication;
@@ -28,8 +26,6 @@ import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.FilterType;
-
-import java.util.Properties;
 
 /**
  * Nacos starter.
@@ -48,16 +44,7 @@ import java.util.Properties;
 public class Nacos {
     
     public static void main(String[] args) throws NacosException {
-//        SpringApplication.run(Nacos.class, args);
-
-        Properties properties = new Properties();
-        properties.put("serverAddr", "127.0.0.1:8848");
-        ConfigService configService = NacosFactory.createConfigService(properties);
-
-
-        String dataId = "order.properties";
-        String group = "DEFAULT_GROUP";
-        String content = configService.getConfig(dataId, group, 5000);
+        SpringApplication.run(Nacos.class, args);
     }
 }
 

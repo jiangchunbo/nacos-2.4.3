@@ -116,6 +116,8 @@ public final class InstanceUtil {
             if (StringUtils.isBlank(instance.getServiceName())) {
                 instance.setServiceName(groupedServiceName);
             }
+
+            // 选择 ID 生成器，生成 ID
             instance.setInstanceId(InstanceIdGeneratorManager.generateInstanceId(instance));
         }
     }

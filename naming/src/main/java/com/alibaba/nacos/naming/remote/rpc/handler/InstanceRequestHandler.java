@@ -56,10 +56,14 @@ public class InstanceRequestHandler extends RequestHandler<InstanceRequest, Inst
     @Secured(action = ActionTypes.WRITE)
     @ExtractorManager.Extractor(rpcExtractor = InstanceRequestParamExtractor.class)
     public InstanceResponse handle(InstanceRequest request, RequestMeta meta) throws NacosException {
+        String namespace = request.getNamespace();
+        String groupName = request.getGroupName();
+        String serviceName = request.getServiceName();
 
         // Service表示服务，一个服务可能有多个实例，当前正在注册的是其中一个实例
-        Service service = Service.newService(request.getNamespace(), request.getGroupName(), request.getServiceName(),
-                true);
+        // 固定处理 ephemeral 实例
+        Service service = Service.newService(namespace, groupName, serviceName, true);
+
         InstanceUtil.setInstanceIdIfEmpty(request.getInstance(), service.getGroupedServiceName());
         switch (request.getType()) {
             case NamingRemoteConstants.REGISTER_INSTANCE:
