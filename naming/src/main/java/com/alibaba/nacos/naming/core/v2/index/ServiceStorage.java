@@ -1,0 +1,175 @@
+/*
+ * Copyright 1999-2018 Alibaba Group Holding Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.alibaba.nacos.naming.core.v2.index;
+
+import com.alibaba.nacos.api.naming.pojo.Instance;
+import com.alibaba.nacos.api.naming.pojo.ServiceInfo;
+import com.alibaba.nacos.naming.core.v2.ServiceManager;
+import com.alibaba.nacos.naming.core.v2.client.Client;
+import com.alibaba.nacos.naming.core.v2.client.manager.ClientManager;
+import com.alibaba.nacos.naming.core.v2.client.manager.ClientManagerDelegate;
+import com.alibaba.nacos.naming.core.v2.metadata.InstanceMetadata;
+import com.alibaba.nacos.naming.core.v2.metadata.NamingMetadataManager;
+import com.alibaba.nacos.naming.core.v2.pojo.BatchInstancePublishInfo;
+import com.alibaba.nacos.naming.core.v2.pojo.InstancePublishInfo;
+import com.alibaba.nacos.naming.core.v2.pojo.Service;
+import com.alibaba.nacos.naming.misc.SwitchDomain;
+import com.alibaba.nacos.naming.utils.InstanceUtil;
+import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+/**
+ * Service storage.
+ *
+ * @author xiweng.yy
+ */
+@Component
+public class ServiceStorage {
+
+    private final ClientServiceIndexesManager serviceIndexesManager;
+
+    private final ClientManager clientManager;
+
+    private final SwitchDomain switchDomain;
+
+    private final NamingMetadataManager metadataManager;
+
+    private final ConcurrentMap<Service, ServiceInfo> serviceDataIndexes;
+
+    private final ConcurrentMap<Service, Set<String>> serviceClusterIndex;
+
+    public ServiceStorage(ClientServiceIndexesManager serviceIndexesManager, ClientManagerDelegate clientManager,
+            SwitchDomain switchDomain, NamingMetadataManager metadataManager) {
+        this.serviceIndexesManager = serviceIndexesManager;
+        this.clientManager = clientManager;
+        this.switchDomain = switchDomain;
+        this.metadataManager = metadataManager;
+        this.serviceDataIndexes = new ConcurrentHashMap<>();
+        this.serviceClusterIndex = new ConcurrentHashMap<>();
+    }
+
+    public Set<String> getClusters(Service service) {
+        return serviceClusterIndex.getOrDefault(service, new HashSet<>());
+    }
+
+    public ServiceInfo getData(Service service) {
+        return serviceDataIndexes.containsKey(service) ? serviceDataIndexes.get(service) : getPushData(service);
+    }
+
+    public ServiceInfo getPushData(Service service) {
+        ServiceInfo result = emptyServiceInfo(service);
+        if (!ServiceManager.getInstance().containSingleton(service)) {
+            return result;
+        }
+
+        Service singleton = ServiceManager.getInstance().getSingleton(service);
+
+        // getAllInstancesFromIndex是重点，会根据Service得到所有实例信息
+        result.setHosts(getAllInstancesFromIndex(singleton));
+
+        // 记录Service对应的实例信息，ServiceInfo主要包含的就是实例信息
+        serviceDataIndexes.put(singleton, result);
+
+        return result;
+    }
+
+    public void removeData(Service service) {
+        serviceDataIndexes.remove(service);
+        serviceClusterIndex.remove(service);
+    }
+
+    private ServiceInfo emptyServiceInfo(Service service) {
+        ServiceInfo result = new ServiceInfo();
+        result.setName(service.getName());
+        result.setGroupName(service.getGroup());
+        result.setLastRefTime(System.currentTimeMillis());
+        result.setCacheMillis(switchDomain.getDefaultPushCacheMillis());
+        return result;
+    }
+
+    private List<Instance> getAllInstancesFromIndex(Service service) {
+        Set<Instance> result = new HashSet<>();
+        Set<String> clusters = new HashSet<>();
+
+        // 从publisherIndexes找到当前service对应的所有clientId
+        for (String each : serviceIndexesManager.getAllClientsRegisteredService(service)) {
+
+            // 从而找到每个clientId注册的当前service的服务实例信息
+            Optional<InstancePublishInfo> instancePublishInfo = getInstanceInfo(each, service);
+            if (instancePublishInfo.isPresent()) {
+                InstancePublishInfo publishInfo = instancePublishInfo.get();
+                //If it is a BatchInstancePublishInfo type, it will be processed manually and added to the instance list
+                if (publishInfo instanceof BatchInstancePublishInfo) {
+                    BatchInstancePublishInfo batchInstancePublishInfo = (BatchInstancePublishInfo) publishInfo;
+                    List<Instance> batchInstance = parseBatchInstance(service, batchInstancePublishInfo, clusters);
+                    result.addAll(batchInstance);
+                } else {
+                    Instance instance = parseInstance(service, instancePublishInfo.get());
+                    result.add(instance);
+                    clusters.add(instance.getClusterName());
+                }
+            }
+        }
+        // cache clusters of this service
+        // 记录当前服务下分为了哪些集群
+        serviceClusterIndex.put(service, clusters);
+
+        // result表示当前服务总共有哪些实例
+        return new LinkedList<>(result);
+    }
+
+    /**
+     * Parse batch instance.
+     * @param service service
+     * @param batchInstancePublishInfo batchInstancePublishInfo
+     * @return batch instance list
+     */
+    private List<Instance> parseBatchInstance(Service service, BatchInstancePublishInfo batchInstancePublishInfo, Set<String> clusters) {
+        List<Instance> resultInstanceList = new ArrayList<>();
+        List<InstancePublishInfo> instancePublishInfos = batchInstancePublishInfo.getInstancePublishInfos();
+        for (InstancePublishInfo instancePublishInfo : instancePublishInfos) {
+            Instance instance = parseInstance(service, instancePublishInfo);
+            resultInstanceList.add(instance);
+            clusters.add(instance.getClusterName());
+        }
+        return resultInstanceList;
+    }
+
+    private Optional<InstancePublishInfo> getInstanceInfo(String clientId, Service service) {
+        Client client = clientManager.getClient(clientId);
+        if (null == client) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(client.getInstancePublishInfo(service));
+    }
+
+    private Instance parseInstance(Service service, InstancePublishInfo instanceInfo) {
+        Instance result = InstanceUtil.parseToApiInstance(service, instanceInfo);
+        Optional<InstanceMetadata> metadata = metadataManager
+                .getInstanceMetadata(service, instanceInfo.getMetadataId());
+        metadata.ifPresent(instanceMetadata -> InstanceUtil.updateInstanceMetadata(result, instanceMetadata));
+        return result;
+    }
+}
