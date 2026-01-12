@@ -243,11 +243,15 @@ public abstract class RpcClient implements Closeable {
             return;
         }
 
+        // 因为就 2 个任务，所以数量是 2
+        // 看起来使用了 Scheduled，实际上又没有调用它的 schedule 方法
+        // 可以理解为只是当作一个普通线程池用
         clientEventExecutor = new ScheduledThreadPoolExecutor(2,
                 new NameThreadFactory("com.alibaba.nacos.client.remote.worker"));
 
         // connection event consumer.
         clientEventExecutor.submit(() -> {
+            // 这个算是一个 while true 模式，直到关闭
             while (!clientEventExecutor.isTerminated() && !clientEventExecutor.isShutdown()) {
                 ConnectionEvent take;
                 try {
@@ -271,6 +275,7 @@ public abstract class RpcClient implements Closeable {
                     }
 
                     // 从reconnectionSignal队列中获取重连事件
+                    // 有一个超时时间
                     ReconnectContext reconnectContext = reconnectionSignal
                             .poll(rpcClientConfig.connectionKeepAlive(), TimeUnit.MILLISECONDS);
 
@@ -278,7 +283,7 @@ public abstract class RpcClient implements Closeable {
                     if (reconnectContext == null) {
                         // check alive time. 默认为5秒
                         if (System.currentTimeMillis() - lastActiveTimeStamp >= rpcClientConfig.connectionKeepAlive()) {
-                            // 健康检查，检查服务端是否健康
+                            // 健康检查，如果成功发送请求，认为健康
                             boolean isHealthy = healthCheck();
                             if (!isHealthy) {
                                 if (currentConnection == null) {
@@ -446,20 +451,30 @@ public abstract class RpcClient implements Closeable {
         closeConnection(currentConnection);
     }
 
+    /**
+     * 心跳检查
+     */
     private boolean healthCheck() {
+        // 心跳检查请求
         HealthCheckRequest healthCheckRequest = new HealthCheckRequest();
         if (this.currentConnection == null) {
+            // 没有连接？
             return false;
         }
+
+        // 心跳检查重试次数
         int reTryTimes = rpcClientConfig.healthCheckRetryTimes();
         Random random = new Random();
         while (reTryTimes >= 0) {
+            // 开始重试，减少 1 次
             reTryTimes--;
             try {
+                // 如果 > 1，这说明不是最后一次重试，等 0 ~ 500 ms
                 if (reTryTimes > 1) {
                     Thread.sleep(random.nextInt(500));
                 }
-                // 发送请求，服务端对应的是HealthCheckRequestHandler
+
+                // 发送请求，服务端对应的是 HealthCheckRequestHandler
                 Response response = this.currentConnection
                         .request(healthCheckRequest, rpcClientConfig.healthCheckTimeOut());
                 // not only check server is ok, also check connection is register.
@@ -632,6 +647,7 @@ public abstract class RpcClient implements Closeable {
 
     /**
      * send request.
+     * 发送请求，使用配置的超时时间
      *
      * @param request request.
      * @return response from server.
@@ -660,6 +676,8 @@ public abstract class RpcClient implements Closeable {
                     throw new NacosException(NacosException.CLIENT_DISCONNECT,
                             "Client not connected, current status:" + rpcClientStatus.get());
                 }
+
+                // 有一个所谓的 currentConnection
                 response = this.currentConnection.request(request, timeoutMills);
                 if (response == null) {
                     throw new NacosException(SERVER_ERROR, "Unknown Exception.");

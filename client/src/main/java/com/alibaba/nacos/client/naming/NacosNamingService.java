@@ -89,6 +89,8 @@ public class NacosNamingService implements NamingService {
     public NacosNamingService(String serverList) throws NacosException {
         Properties properties = new Properties();
         properties.setProperty(PropertyKeyConst.SERVER_ADDR, serverList);
+
+        // 这里面会初始化连接
         init(properties);
     }
 
@@ -99,9 +101,13 @@ public class NacosNamingService implements NamingService {
     private void init(Properties properties) throws NacosException {
         // 异步提前加载一些耗时的组件，包括初始化ObjectMapper、从文件中读取accessKey
         PreInitUtils.asyncPreLoadCostComponent();
+
+        // 传入的 Properties -> NacosClientProperties
         final NacosClientProperties nacosClientProperties = NacosClientProperties.PROTOTYPE.derive(properties);
         NAMING_LOGGER.info(ParamUtil.getInputParameters(nacosClientProperties.asProperties()));
         ValidatorUtils.checkInitParam(nacosClientProperties);
+
+        //
         this.namespace = InitUtils.initNamespaceForNaming(nacosClientProperties);
         InitUtils.initSerialization();
         InitUtils.initWebRootContext(nacosClientProperties);
@@ -111,6 +117,8 @@ public class NacosNamingService implements NamingService {
         this.changeNotifier = new InstancesChangeNotifier(this.notifierEventScope);
         NotifyCenter.registerToPublisher(InstancesChangeEvent.class, 16384);
         NotifyCenter.registerSubscriber(changeNotifier);
+
+        // 客户端的服务实例信息本地缓存
         this.serviceInfoHolder = new ServiceInfoHolder(namespace, this.notifierEventScope, nacosClientProperties);
         this.clientProxy = new NamingClientProxyDelegate(this.namespace, serviceInfoHolder, nacosClientProperties,
                 changeNotifier);
@@ -155,6 +163,8 @@ public class NacosNamingService implements NamingService {
     @Override
     public void registerInstance(String serviceName, String groupName, Instance instance) throws NacosException {
         NamingUtils.checkInstanceIsLegal(instance);
+
+        // 检查什么的，似乎不太重要
         checkAndStripGroupNamePrefix(instance, groupName);
 
         // 在当前类的init()方法中赋值为了NamingClientProxyDelegate

@@ -118,6 +118,7 @@ public class NamingGrpcClientProxy extends AbstractNamingClientProxy {
         rpcClient.serverListFactory(serverListFactory);
         rpcClient.registerConnectionListener(redoService);
         // NamingPushRequestHandler就是用来处理BaseRpcServer发给GrpcClient的请求的，比如服务实例变更
+        // 双端流，处理 Nacos Server 推送过来的数据
         rpcClient.registerServerRequestHandler(new NamingPushRequestHandler(serviceInfoHolder));
         rpcClient.start();
         NotifyCenter.registerSubscriber(this);
@@ -454,7 +455,7 @@ public class NamingGrpcClientProxy extends AbstractNamingClientProxy {
             request.putAllHeader(
                     getSecurityHeaders(request.getNamespace(), request.getGroupName(), request.getServiceName()));
 
-            // 利用RpcClient，底层就是GrpcSdkClient，发送request
+            // 利用 RpcClient ，底层就是 GrpcSdkClient，发送request
             response = requestTimeout < 0 ? rpcClient.request(request) : rpcClient.request(request, requestTimeout);
 
             if (ResponseCode.SUCCESS.getCode() != response.getResultCode()) {
