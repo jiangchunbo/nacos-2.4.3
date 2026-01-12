@@ -48,6 +48,8 @@ import static com.alibaba.nacos.client.utils.LogUtils.NAMING_LOGGER;
 
 /**
  * Delegate of naming client proxy.
+ * <p>
+ * 客户端代理
  *
  * @author xiweng.yy
  */
@@ -68,7 +70,7 @@ public class NamingClientProxyDelegate implements NamingClientProxy {
     private ScheduledExecutorService executorService;
 
     public NamingClientProxyDelegate(String namespace, ServiceInfoHolder serviceInfoHolder,
-            NacosClientProperties properties, InstancesChangeNotifier changeNotifier) throws NacosException {
+                                     NacosClientProperties properties, InstancesChangeNotifier changeNotifier) throws NacosException {
         this.serviceInfoUpdateService = new ServiceInfoUpdateService(properties, serviceInfoHolder, this,
                 changeNotifier);
         this.serverListManager = new ServerListManager(properties, namespace);
@@ -80,7 +82,7 @@ public class NamingClientProxyDelegate implements NamingClientProxy {
         // http client 客户端
         this.httpClientProxy = new NamingHttpClientProxy(namespace, securityProxy, serverListManager, properties);
 
-        // grpc client 客户端
+        // grpc client 客户端 (一般用于临时实例)
         this.grpcClientProxy = new NamingGrpcClientProxy(namespace, securityProxy, serverListManager, properties,
                 serviceInfoHolder);
     }
@@ -134,7 +136,7 @@ public class NamingClientProxyDelegate implements NamingClientProxy {
 
     @Override
     public ServiceInfo queryInstancesOfService(String serviceName, String groupName, String clusters,
-            boolean healthyOnly) throws NacosException {
+                                               boolean healthyOnly) throws NacosException {
         return grpcClientProxy.queryInstancesOfService(serviceName, groupName, clusters, healthyOnly);
     }
 
@@ -219,4 +221,5 @@ public class NamingClientProxyDelegate implements NamingClientProxy {
         ThreadUtils.shutdownThreadPool(executorService, NAMING_LOGGER);
         NAMING_LOGGER.info("{} do shutdown stop", className);
     }
+
 }
