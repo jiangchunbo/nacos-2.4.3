@@ -153,8 +153,8 @@ public class NamingUtils {
                     "Instance can not be null.");
         }
 
-        // heart beat 如果 timout 比 interval 还小，这是不允许的
-        // ip delete 如果 timeout 比心跳 interval 还小，也不允许
+        // heart beat interval 就是双方的通信间隔；timeout 是指一定时间不通信认为不活跃
+        // 如果 interval 比 timeout 还要长，参数配置上就是存在问题的，通常 timeout 都是 interval 的 N (3)倍
         if (instance.getInstanceHeartBeatTimeOut() < instance.getInstanceHeartBeatInterval()
                 || instance.getIpDeleteTimeout() < instance.getInstanceHeartBeatInterval()) {
             throw new NacosApiException(NacosException.INVALID_PARAM, ErrorCode.INSTANCE_ERROR,

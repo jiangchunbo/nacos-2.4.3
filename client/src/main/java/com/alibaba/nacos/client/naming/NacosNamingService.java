@@ -147,11 +147,14 @@ public class NacosNamingService implements NamingService {
     @Override
     public void registerInstance(String serviceName, String groupName, String ip, int port, String clusterName)
             throws NacosException {
+        // 以 IP、Port、Weight、cluserName 组成 Instance，所以本质上还是 instance 注册
         Instance instance = new Instance();
         instance.setIp(ip);
         instance.setPort(port);
         instance.setWeight(1.0);
         instance.setClusterName(clusterName);
+
+        // 本质还是调用 instance 注册方法
         registerInstance(serviceName, groupName, instance);
     }
 
@@ -167,7 +170,7 @@ public class NacosNamingService implements NamingService {
         // 检查什么的，似乎不太重要
         checkAndStripGroupNamePrefix(instance, groupName);
 
-        // 在当前类的init()方法中赋值为了NamingClientProxyDelegate
+        // 路由地决策使用何种协议去注册
         clientProxy.registerService(serviceName, groupName, instance);
     }
 

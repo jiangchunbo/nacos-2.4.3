@@ -64,16 +64,21 @@ public class NamingGrpcRedoService implements ConnectionEventListener {
     private volatile boolean connected = false;
 
     public NamingGrpcRedoService(NamingGrpcClientProxy clientProxy, NacosClientProperties properties) {
+        // 设置属性，一般就是调度型线程池的参数
         setProperties(properties);
 
-        // 开启了一个定时任务RedoScheduledTask
+        // 创建了 1 个 ScheduledThreadPoolExecutor，并且以 fixed delay 模式调度(任务执行结束计时)
         this.redoExecutor = new ScheduledThreadPoolExecutor(redoThreadCount, new NameThreadFactory(REDO_THREAD_NAME));
+
+        // 只调度一个任务 (由于只有 1 个任务，也不用纠结线程池参数)
         this.redoExecutor.scheduleWithFixedDelay(new RedoScheduledTask(clientProxy, this), redoDelayTime, redoDelayTime,
                 TimeUnit.MILLISECONDS);
     }
 
     private void setProperties(NacosClientProperties properties) {
         redoDelayTime = properties.getLong(PropertyKeyConst.REDO_DELAY_TIME, Constants.DEFAULT_REDO_DELAY_TIME);
+
+        // 默认使用 1 个 core thread size
         redoThreadCount = properties.getInteger(PropertyKeyConst.REDO_DELAY_THREAD_COUNT,
                 Constants.DEFAULT_REDO_THREAD_COUNT);
     }
@@ -107,6 +112,8 @@ public class NamingGrpcRedoService implements ConnectionEventListener {
 
     /**
      * Cache registered instance for redo.
+     * <p>
+     * 缓存 ephemeral instance
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -114,7 +121,11 @@ public class NamingGrpcRedoService implements ConnectionEventListener {
      */
     public void cacheInstanceForRedo(String serviceName, String groupName, Instance instance) {
         String key = NamingUtils.getGroupedName(serviceName, groupName);
+
+        // InstanceRedoData 就是把 key + value 的信息都封装在一个对象
         InstanceRedoData redoData = InstanceRedoData.build(serviceName, groupName, instance);
+
+        // 放到缓存，有其他定时任务会去处理
         synchronized (registeredInstances) {
             registeredInstances.put(key, redoData);
         }

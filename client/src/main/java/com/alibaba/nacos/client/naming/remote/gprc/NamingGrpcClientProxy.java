@@ -147,7 +147,9 @@ public class NamingGrpcClientProxy extends AbstractNamingClientProxy {
 
     private void registerServiceForEphemeral(String serviceName, String groupName, Instance instance)
             throws NacosException {
-        redoService.cacheInstanceForRedo(serviceName, groupName, instance);
+        // 缓存，防止注册失败
+        redoService.cacheInstanceForRedo(serviceName, groupName, instance); // 缓存 ephemeral instance
+
         doRegisterService(serviceName, groupName, instance);
     }
 

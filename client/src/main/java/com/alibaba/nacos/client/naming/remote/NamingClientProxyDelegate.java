@@ -49,7 +49,7 @@ import static com.alibaba.nacos.client.utils.LogUtils.NAMING_LOGGER;
 /**
  * Delegate of naming client proxy.
  * <p>
- * 客户端代理
+ * 可以理解为带有路由性质的 NamingClientProxy，或者自行决策的 NamingClientProxy，使用 http 还是 grpc
  *
  * @author xiweng.yy
  */
@@ -98,7 +98,7 @@ public class NamingClientProxyDelegate implements NamingClientProxy {
 
     @Override
     public void registerService(String serviceName, String groupName, Instance instance) throws NacosException {
-        // 默认临时实例和非临时实例都用grpcClientProxy
+        // 根据 instance 决策最终使用的 client
         getExecuteClientProxy(instance).registerService(serviceName, groupName, instance);
     }
 

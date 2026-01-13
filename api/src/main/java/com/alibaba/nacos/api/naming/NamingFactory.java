@@ -23,11 +23,13 @@ import java.util.Properties;
 
 /**
  * Naming Factory.
+ * <p>
+ * 更适合叫 NamingService 工厂
  *
  * @author nkorange
  */
 public class NamingFactory {
-    
+
     /**
      * Create a new naming service.
      *
@@ -44,7 +46,7 @@ public class NamingFactory {
             throw new NacosException(NacosException.CLIENT_INVALID_PARAM, e);
         }
     }
-    
+
     /**
      * Create a new naming service.
      *
@@ -61,4 +63,5 @@ public class NamingFactory {
             throw new NacosException(NacosException.CLIENT_INVALID_PARAM, e);
         }
     }
+
 }

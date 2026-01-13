@@ -27,18 +27,31 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class NameThreadFactory implements ThreadFactory {
-    
+
     private final AtomicInteger id = new AtomicInteger(0);
-    
+
     private String name;
-    
+
+    /**
+     * Constructor.
+     *
+     * @param name thread name。总是确保 name 后面会跟上 '.'
+     */
     public NameThreadFactory(String name) {
         if (!name.endsWith(StringUtils.DOT)) {
             name += StringUtils.DOT;
         }
         this.name = name;
     }
-    
+
+    /**
+     * Create thread.
+     * <p>
+     * 创建的线程总是守护线程
+     *
+     * @param r a runnable to be executed by new thread instance
+     * @return Thread
+     */
     @Override
     public Thread newThread(Runnable r) {
         String threadName = name + id.getAndIncrement();
@@ -46,4 +59,5 @@ public class NameThreadFactory implements ThreadFactory {
         thread.setDaemon(true);
         return thread;
     }
+
 }
