@@ -154,7 +154,7 @@ public abstract class GrpcClient extends RpcClient {
     }
 
     public GrpcClient(String name, Integer threadPoolCoreSize, Integer threadPoolMaxSize, Map<String, String> labels,
-            RpcClientTlsConfig tlsConfig) {
+                      RpcClientTlsConfig tlsConfig) {
         this(DefaultGrpcClientConfig.newBuilder().setName(name).setThreadPoolCoreSize(threadPoolCoreSize)
                 .setTlsConfig(tlsConfig).setThreadPoolMaxSize(threadPoolMaxSize).setLabels(labels).build());
     }
@@ -200,6 +200,7 @@ public abstract class GrpcClient extends RpcClient {
     private ManagedChannel createNewManagedChannel(String serverIp, int serverPort) {
         LOGGER.info("grpc client connection server:{} ip,serverPort:{},grpcTslConfig:{}", serverIp, serverPort,
                 JacksonUtils.toJson(clientConfig.tlsConfig()));
+
         ManagedChannelBuilder<?> managedChannelBuilder = buildChannel(serverIp, serverPort, buildSslContext()).executor(
                         grpcExecutor).compressorRegistry(CompressorRegistry.getDefaultInstance())
                 .decompressorRegistry(DecompressorRegistry.getDefaultInstance())
@@ -247,10 +248,15 @@ public abstract class GrpcClient extends RpcClient {
     }
 
     private StreamObserver<Payload> bindRequestStream(final BiRequestStreamGrpc.BiRequestStreamStub streamStub,
-            final GrpcConnection grpcConn) {
+                                                      final GrpcConnection grpcConn) {
 
         return streamStub.requestBiStream(new StreamObserver<Payload>() {
 
+            /**
+             * 处理 Server 发送过来的数据
+             *
+             * @param payload Server 发送过来的数据
+             */
             @Override
             public void onNext(Payload payload) {
 
@@ -267,7 +273,10 @@ public abstract class GrpcClient extends RpcClient {
                                 setupRequestHandler.requestReply(request, null);
                                 return;
                             }
+
+                            // 处理服务端请求
                             Response response = handleServerRequest(request);
+
                             if (response != null) {
                                 response.setRequestId(request.getRequestId());
                                 sendResponse(response);
@@ -343,6 +352,10 @@ public abstract class GrpcClient extends RpcClient {
         }
     }
 
+    /**
+     * @param serverInfo 服务器信息，也就是我们挑选出来的一台的服务器 (还不知道是否能连接)
+     * @return 连接
+     */
     @Override
     public Connection connectToServer(ServerInfo serverInfo) {
         // the newest connection id
@@ -351,20 +364,25 @@ public abstract class GrpcClient extends RpcClient {
             if (grpcExecutor == null) {
                 this.grpcExecutor = createGrpcExecutor(serverInfo.getServerIp());
             }
-            // 8848+rpcPortOffset(默认为1000)，创建Socket连接
+            // 计算端口。默认是 8848 (server 端口) + offset (rpc 专用的端口偏移量)
             int port = serverInfo.getServerPort() + rpcPortOffset();
+
+            // 创建 gRPC ManagedChannel
             ManagedChannel managedChannel = createNewManagedChannel(serverInfo.getServerIp(), port);
 
-            // 调用requestBlockingStub.request()方法发生一个ServerCheckRequest请求
+            // 创建请求调用 Stub
             RequestGrpc.RequestFutureStub newChannelStubTemp = createNewChannelStub(managedChannel);
+
+            // 使用 Stub 请求 server check
             Response response = serverCheck(serverInfo.getServerIp(), port, newChannelStubTemp);
             if (!(response instanceof ServerCheckResponse)) {
                 shuntDownChannel(managedChannel);
                 return null;
             }
+
             // submit ability table as soon as possible
             // ability table will be null if server doesn't support ability table
-            // Server端负责生成connectionId
+            // 如果连接成功，Server 会创建一个 ConnectionId
             ServerCheckResponse serverCheckResponse = (ServerCheckResponse) response;
             connectionId = serverCheckResponse.getConnectionId();
 
@@ -527,6 +545,7 @@ public abstract class GrpcClient extends RpcClient {
             }
             return true;
         }
+
     }
 
     private Optional<SslContext> buildSslContext() {
@@ -606,7 +625,9 @@ public abstract class GrpcClient extends RpcClient {
             }
             return null;
         }
+
     }
+
 }
 
 

@@ -51,7 +51,8 @@ public class InitUtils {
      */
     public static String initNamespaceForNaming(NacosClientProperties properties) {
         String tmpNamespace = null;
-        
+
+        // 是否使用 cloud 环境里的 namespace
         String isUseCloudNamespaceParsing = properties.getProperty(PropertyKeyConst.IS_USE_CLOUD_NAMESPACE_PARSING,
                 properties.getProperty(SystemPropertyKeyConst.IS_USE_CLOUD_NAMESPACE_PARSING,
                         String.valueOf(Constants.DEFAULT_USE_CLOUD_NAMESPACE_PARSING)));

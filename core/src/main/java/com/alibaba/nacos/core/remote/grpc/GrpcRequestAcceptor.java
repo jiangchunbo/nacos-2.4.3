@@ -48,6 +48,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * rpc request acceptor of grpc.
+ * <p>
+ * gRPC 统一接受请求的入口
  *
  * @author liuzunfei
  * @version $Id: GrpcCommonRequestAcceptor.java, v 0.1 2020年09月01日 10:52 AM liuzunfei Exp $
@@ -99,9 +101,9 @@ public class GrpcRequestAcceptor extends RequestGrpc.RequestImplBase {
             return;
         }
 
-        // server check.
+        // 特殊地，处理 server check 请求
         if (ServerCheckRequest.class.getSimpleName().equals(type)) {
-            // 生成一个connectionId并返回
+            // 获取 connectionId 并返回
             Payload serverCheckResponseP = GrpcUtils.convert(new ServerCheckResponse(GrpcServerConstants.CONTEXT_KEY_CONN_ID.get(), true));
             traceIfNecessary(serverCheckResponseP, false);
             responseObserver.onNext(serverCheckResponseP);
@@ -111,6 +113,7 @@ public class GrpcRequestAcceptor extends RequestGrpc.RequestImplBase {
             return;
         }
 
+        // 从 RequestHandler 注册表获取对应的处理器
         RequestHandler requestHandler = requestHandlerRegistry.getByRequestType(type);
         //no handler found.
         if (requestHandler == null) {
@@ -197,7 +200,7 @@ public class GrpcRequestAcceptor extends RequestGrpc.RequestImplBase {
             connectionManager.refreshActiveTime(requestMeta.getConnectionId());
             prepareRequestContext(request, requestMeta, connection);
 
-            // 利用requestHandler处理请求
+            // 利用 requestHandler 处理请求
             Response response = requestHandler.handleRequest(request, requestMeta);
 
             Payload payloadResponse = GrpcUtils.convert(response);

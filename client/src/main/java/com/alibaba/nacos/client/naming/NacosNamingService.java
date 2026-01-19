@@ -120,6 +120,8 @@ public class NacosNamingService implements NamingService {
 
         // 客户端的服务实例信息本地缓存
         this.serviceInfoHolder = new ServiceInfoHolder(namespace, this.notifierEventScope, nacosClientProperties);
+
+        // 创建 Client
         this.clientProxy = new NamingClientProxyDelegate(this.namespace, serviceInfoHolder, nacosClientProperties,
                 changeNotifier);
     }

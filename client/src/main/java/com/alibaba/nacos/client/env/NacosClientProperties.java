@@ -25,7 +25,7 @@ import java.util.Properties;
  * @author onewe
  */
 public interface NacosClientProperties {
-    
+
     /**
      * all the NacosClientProperties object must be created by PROTOTYPE, so child NacosClientProperties can read
      * properties from the PROTOTYPE. it looks like this: |-PROTOTYPE----------------> ip=127.0.0.1
@@ -34,7 +34,7 @@ public interface NacosClientProperties {
      * parent NacosClientProperties
      */
     NacosClientProperties PROTOTYPE = SearchableProperties.INSTANCE;
-    
+
     /**
      * get property, if the value can not be got by the special key, the null will be returned.
      *
@@ -42,7 +42,7 @@ public interface NacosClientProperties {
      * @return string value or null.
      */
     String getProperty(String key);
-    
+
     /**
      * get property, if the value can not be got by the special key, the default value will be returned.
      *
@@ -51,7 +51,7 @@ public interface NacosClientProperties {
      * @return string value or default value.
      */
     String getProperty(String key, String defaultValue);
-    
+
     /**
      * get property from special property source.
      *
@@ -61,7 +61,7 @@ public interface NacosClientProperties {
      * @see SourceType
      */
     String getPropertyFrom(SourceType source, String key);
-    
+
     /**
      * get property from special property source.
      *
@@ -70,7 +70,7 @@ public interface NacosClientProperties {
      * @see SourceType
      */
     Properties getProperties(SourceType source);
-    
+
     /**
      * get boolean, if the value can not be got by the special key, the null will be returned.
      *
@@ -78,7 +78,7 @@ public interface NacosClientProperties {
      * @return boolean value or null.
      */
     Boolean getBoolean(String key);
-    
+
     /**
      * get boolean, if the value can not be got by the special key, the default value will be returned.
      *
@@ -87,7 +87,7 @@ public interface NacosClientProperties {
      * @return boolean value or defaultValue.
      */
     Boolean getBoolean(String key, Boolean defaultValue);
-    
+
     /**
      * get integer, if the value can not be got by the special key, the null will be returned.
      *
@@ -95,7 +95,7 @@ public interface NacosClientProperties {
      * @return integer value or null
      */
     Integer getInteger(String key);
-    
+
     /**
      * get integer, if the value can not be got by the special key, the default value will be returned.
      *
@@ -104,7 +104,7 @@ public interface NacosClientProperties {
      * @return integer value or default value
      */
     Integer getInteger(String key, Integer defaultValue);
-    
+
     /**
      * get long, if the value can not be got by the special key, the null will be returned.
      *
@@ -112,7 +112,7 @@ public interface NacosClientProperties {
      * @return long value or null
      */
     Long getLong(String key);
-    
+
     /**
      * get long, if the value can not be got by the special key, the default value will be returned.
      *
@@ -121,7 +121,7 @@ public interface NacosClientProperties {
      * @return long value or default value
      */
     Long getLong(String key, Long defaultValue);
-    
+
     /**
      * set property.
      *
@@ -129,14 +129,14 @@ public interface NacosClientProperties {
      * @param value value
      */
     void setProperty(String key, String value);
-    
+
     /**
      * add properties.
      *
      * @param properties properties
      */
     void addProperties(Properties properties);
-    
+
     /**
      * Tests if the specified object is a key in this NacosClientProperties.
      *
@@ -144,26 +144,29 @@ public interface NacosClientProperties {
      * @return true if and only if the specified object is a key in this NacosClientProperties, false otherwise.
      */
     boolean containsKey(String key);
-    
+
     /**
      * get properties from NacosClientProperties.
      *
      * @return properties
      */
     Properties asProperties();
-    
+
     /**
      * create a new NacosClientProperties which scope is itself.
      *
      * @return NacosClientProperties
      */
     NacosClientProperties derive();
-    
+
     /**
      * create a new NacosClientProperties from NacosClientProperties#PROTOTYPE and init.
+     * <p>
+     * 从 properties 派生出一个 NacosClientProperties
      *
      * @param properties properties
      * @return NacosClientProperties
      */
     NacosClientProperties derive(Properties properties);
+
 }

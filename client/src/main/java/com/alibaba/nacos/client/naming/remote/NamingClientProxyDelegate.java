@@ -47,6 +47,8 @@ import static com.alibaba.nacos.client.constant.Constants.Security.SECURITY_INFO
 import static com.alibaba.nacos.client.utils.LogUtils.NAMING_LOGGER;
 
 /**
+ * Client 也就是能够与服务器通信，并且这个类还有一层委托的语义。
+ * <p>
  * Delegate of naming client proxy.
  * <p>
  * 可以理解为带有路由性质的 NamingClientProxy，或者自行决策的 NamingClientProxy，使用 http 还是 grpc

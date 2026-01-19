@@ -114,7 +114,7 @@ public class ConnectionManager {
                 connection.setTraced(true);
             }
 
-            // 保存connectionId和connection之间的映射关系，connection中包含了clientIp
+            // 保存 connectionId 和 connection 之间的映射关系，connection 中包含了 clientIp
             connections.put(connectionId, connection);
             connectionForClientIp.computeIfAbsent(clientIp, k -> new AtomicInteger(0)).getAndIncrement();
 
@@ -254,7 +254,7 @@ public class ConnectionManager {
         // Start UnHealthy Connection Expel Task.
         // 每3秒执行一次
         RpcScheduledExecutor.COMMON_SERVER_EXECUTOR.scheduleWithFixedDelay(() -> {
-            // 默认就是NacosRuntimeConnectionEjector
+            // 默认就是 NacosRuntimeConnectionEjector
             runtimeConnectionEjector.doEject();
             MetricsMonitor.getLongConnectionMonitor().set(connections.size());
         }, 1000L, 3000L, TimeUnit.MILLISECONDS);

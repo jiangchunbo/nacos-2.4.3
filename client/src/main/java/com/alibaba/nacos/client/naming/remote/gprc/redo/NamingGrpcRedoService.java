@@ -148,6 +148,10 @@ public class NamingGrpcRedoService implements ConnectionEventListener {
 
     /**
      * Instance register successfully, mark registered status as {@code true}.
+     * <p>
+     * 标记服务注册成功。
+     * <p>
+     * 而且，底层的设计表明不可能同一个服务被同一个实例多次注册。
      *
      * @param serviceName service name
      * @param groupName   group name

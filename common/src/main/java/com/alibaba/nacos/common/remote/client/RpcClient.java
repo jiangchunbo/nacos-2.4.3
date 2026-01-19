@@ -286,7 +286,7 @@ public abstract class RpcClient implements Closeable {
                             // 健康检查，如果成功发送请求，认为健康
                             boolean isHealthy = healthCheck();
                             if (!isHealthy) {
-                                if (currentConnection == null) {
+                                if (currentConnection == null) { // 可能 currentConnection 还没有初始化完毕，等待
                                     continue;
                                 }
                                 LoggerUtils.printIfInfoEnabled(LOGGER,
@@ -362,7 +362,7 @@ public abstract class RpcClient implements Closeable {
                         rpcClientConfig.name(), serverInfo);
 
                 // 和RpcServer建立连接，本质就是双端流
-                connectToServer = connectToServer(serverInfo);
+                connectToServer = connectToServer(serverInfo); // start 阶段连接 server
             } catch (Throwable e) {
                 LoggerUtils.printIfWarnEnabled(LOGGER,
                         "[{}] Fail to connect to server on start up, error message = {}, start up retry times left: {}",
@@ -429,6 +429,7 @@ public abstract class RpcClient implements Closeable {
             }
             return null;
         }
+
     }
 
     /**
@@ -853,6 +854,8 @@ public abstract class RpcClient implements Closeable {
         LoggerUtils.printIfInfoEnabled(LOGGER, "[{}] Receive server push request, request = {}, requestId = {}",
                 rpcClientConfig.name(), request.getClass().getSimpleName(), request.getRequestId());
         lastActiveTimeStamp = System.currentTimeMillis();
+
+        // 哪个 ServerRequestHandler 能够处理(返回 response) 就结束
         for (ServerRequestHandler serverRequestHandler : serverRequestHandlers) {
             try {
                 Response response = serverRequestHandler.requestReply(request, currentConnection);
@@ -914,6 +917,9 @@ public abstract class RpcClient implements Closeable {
         return serverListFactory;
     }
 
+    /**
+     * 获取下一个可用的 RPC 服务器信息。因为可能写了好几个 server 随便连到哪一台。
+     */
     protected ServerInfo nextRpcServer() {
         String serverAddress = getServerListFactory().genNextServer();
         return resolveServerInfo(serverAddress);
@@ -1007,6 +1013,7 @@ public abstract class RpcClient implements Closeable {
         public String toString() {
             return "{serverIp = '" + serverIp + '\'' + ", server main port = " + serverPort + '}';
         }
+
     }
 
     public static class ConnectionEvent {
@@ -1031,6 +1038,7 @@ public abstract class RpcClient implements Closeable {
         public boolean isDisConnected() {
             return eventType == DISCONNECTED;
         }
+
     }
 
     /**
@@ -1052,6 +1060,7 @@ public abstract class RpcClient implements Closeable {
         boolean onRequestFail;
 
         ServerInfo serverInfo;
+
     }
 
     public String getTenant() {
@@ -1075,4 +1084,5 @@ public abstract class RpcClient implements Closeable {
         // return null if connection is not ready
         return null;
     }
+
 }
