@@ -92,9 +92,13 @@ public class DistroClientDataProcessor extends SmartSubscriber implements Distro
 
     @Override
     public void onEvent(Event event) {
+        // 如果是 standalone 模式，那么不做任何处理，意思就是忽略 event
         if (EnvUtil.getStandaloneMode()) {
             return;
         }
+
+        // 忽略哪些事件呢？ClientEvent.ClientVerifyFailedEvent
+
         if (event instanceof ClientEvent.ClientVerifyFailedEvent) {
             syncToVerifyFailedServer((ClientEvent.ClientVerifyFailedEvent) event);
         } else {

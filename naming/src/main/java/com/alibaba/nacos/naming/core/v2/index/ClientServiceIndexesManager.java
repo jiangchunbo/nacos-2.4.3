@@ -45,7 +45,9 @@ import java.util.concurrent.ConcurrentMap;
 @Component
 public class ClientServiceIndexesManager extends SmartSubscriber {
 
-    // 记录服务有哪些提供者clientId
+    /**
+     * 通过 service 找到有哪些 instance (connectionId 或者称之为 clientId)
+     */
     private final ConcurrentMap<Service, Set<String>> publisherIndexes = new ConcurrentHashMap<>();
 
     // 记录服务有哪些消费者clientId
@@ -118,6 +120,7 @@ public class ClientServiceIndexesManager extends SmartSubscriber {
     private void handleClientOperation(ClientOperationEvent event) {
         Service service = event.getService();
         String clientId = event.getClientId();
+
         if (event instanceof ClientOperationEvent.ClientRegisterServiceEvent) {
             // 服务注册，添加publisherIndexes
             addPublisherIndexes(service, clientId);
@@ -133,9 +136,12 @@ public class ClientServiceIndexesManager extends SmartSubscriber {
         }
     }
 
+    /**
+     * 当向 service 对应的 clientId 集合中投放一个 clientId 时，需要发布 service changed 事件
+     */
     private void addPublisherIndexes(Service service, String clientId) {
         publisherIndexes.computeIfAbsent(service, key -> new ConcurrentHashSet<>()).add(clientId);
-        NotifyCenter.publishEvent(new ServiceEvent.ServiceChangedEvent(service, true));
+        NotifyCenter.publishEvent(new ServiceEvent.ServiceChangedEvent(service, true)); // service -> List<clientId> 变化
     }
 
     private void removePublisherIndexes(Service service, String clientId) {

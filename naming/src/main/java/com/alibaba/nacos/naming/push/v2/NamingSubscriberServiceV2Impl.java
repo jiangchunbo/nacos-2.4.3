@@ -114,13 +114,18 @@ public class NamingSubscriberServiceV2Impl extends SmartSubscriber implements Na
 
     @Override
     public void onEvent(Event event) {
+        // 当向 publisherIndexes 维护好 clientId 后，发出 service changed 事件
         if (event instanceof ServiceEvent.ServiceChangedEvent) {
             // If service changed, push to all subscribers.
             ServiceEvent.ServiceChangedEvent serviceChangedEvent = (ServiceEvent.ServiceChangedEvent) event;
             Service service = serviceChangedEvent.getService();
+
+            // 异步
             delayTaskEngine.addTask(service, new PushDelayTask(service, PushConfig.getInstance().getPushTaskDelay()));
             MetricsMonitor.incrementServiceChangeCount(service);
-        } else if (event instanceof ServiceEvent.ServiceSubscribedEvent) {
+        }
+        // 有人关注了这个 service
+        else if (event instanceof ServiceEvent.ServiceSubscribedEvent) {
             // If service is subscribed by one client, only push this client.
             ServiceEvent.ServiceSubscribedEvent subscribedEvent = (ServiceEvent.ServiceSubscribedEvent) event;
             Service service = subscribedEvent.getService();

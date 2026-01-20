@@ -88,7 +88,7 @@ public abstract class AbstractClient implements Client {
             }
         }
 
-        // publishers 注册之后会立即发布事件 ClientChangedEvent
+        // publishers 注册之后会立即发布事件 ClientChangedEvent (单机模式其实没啥用)
         NotifyCenter.publishEvent(new ClientEvent.ClientChangedEvent(this));
 
         Loggers.SRV_LOG.info("Client change for service {}, {}", service, getClientId());

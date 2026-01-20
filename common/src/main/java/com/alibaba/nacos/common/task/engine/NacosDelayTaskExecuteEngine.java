@@ -114,11 +114,20 @@ public class NacosDelayTaskExecuteEngine extends AbstractNacosTaskExecuteEngine<
         processingExecutor.shutdown();
     }
 
+    /**
+     * 添加任务
+     *
+     * @param key     任务的 Key
+     * @param newTask 任务
+     */
     @Override
     public void addTask(Object key, AbstractDelayTask newTask) {
         lock.lock();
         try {
+            // 通过 Key 获取当前正在等待执行的任务
             AbstractDelayTask existTask = tasks.get(key);
+
+            // 如果存在，那么将其合并，并得到一个 new task
             if (null != existTask) {
                 newTask.merge(existTask);
             }
@@ -171,5 +180,7 @@ public class NacosDelayTaskExecuteEngine extends AbstractNacosTaskExecuteEngine<
                 getEngineLog().error(e.toString(), e);
             }
         }
+
     }
+
 }

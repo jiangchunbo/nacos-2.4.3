@@ -133,9 +133,16 @@ public class DefaultPublisher extends Thread implements EventPublisher {
         subscribers.remove(subscriber);
     }
 
+    /**
+     * 核心的 Event 发布
+     *
+     * @param event {@link Event} 事件信息
+     * @return 总是返回 true
+     */
     @Override
     public boolean publish(Event event) {
         checkIsStart();
+
         // 修改配置会发布ConfigDataChangeEvent事件
         boolean success = this.queue.offer(event);
         if (!success) {
@@ -212,4 +219,5 @@ public class DefaultPublisher extends Thread implements EventPublisher {
             }
         }
     }
+
 }
