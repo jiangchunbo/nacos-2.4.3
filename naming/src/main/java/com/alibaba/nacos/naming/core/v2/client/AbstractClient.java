@@ -45,6 +45,8 @@ public abstract class AbstractClient implements Client {
 
     /**
      * 当前客户端发布了哪些服务
+     * <p>
+     * 当客户端调用 addServiceInstance 时，将会注册一个 publisher。
      */
     protected final ConcurrentHashMap<Service, InstancePublishInfo> publishers = new ConcurrentHashMap<>(16, 0.75f, 1);
 
@@ -80,13 +82,15 @@ public abstract class AbstractClient implements Client {
             InstancePublishInfo old = publishers.put(service, instancePublishInfo);
             MetricsMonitor.incrementIpCountWithBatchRegister(old, (BatchInstancePublishInfo) instancePublishInfo);
         } else {
+            // put 将会总是注册 publishers，但是通过返回值是是否是 null 来判断实例是否是第一次注册
             if (null == publishers.put(service, instancePublishInfo)) {
                 MetricsMonitor.incrementInstanceCount();
             }
         }
 
-        // 发布ClientChangedEvent事件，集群模式下会用到
+        // publishers 注册之后会立即发布事件 ClientChangedEvent
         NotifyCenter.publishEvent(new ClientEvent.ClientChangedEvent(this));
+
         Loggers.SRV_LOG.info("Client change for service {}, {}", service, getClientId());
         return true;
     }
@@ -154,7 +158,7 @@ public abstract class AbstractClient implements Client {
 
         List<InstancePublishInfo> instances = new LinkedList<>();
         List<BatchInstancePublishInfo> batchInstancePublishInfos = new LinkedList<>();
-        BatchInstanceData  batchInstanceData = new BatchInstanceData();
+        BatchInstanceData batchInstanceData = new BatchInstanceData();
 
         // 当前Client中提供了哪些服务及对应实例信息
         for (Map.Entry<Service, InstancePublishInfo> entry : publishers.entrySet()) {
@@ -176,8 +180,8 @@ public abstract class AbstractClient implements Client {
         return data;
     }
 
-    private static BatchInstanceData buildBatchInstanceData(BatchInstanceData  batchInstanceData, List<String> batchNamespaces,
-            List<String> batchGroupNames, List<String> batchServiceNames, Map.Entry<Service, InstancePublishInfo> entry) {
+    private static BatchInstanceData buildBatchInstanceData(BatchInstanceData batchInstanceData, List<String> batchNamespaces,
+                                                            List<String> batchGroupNames, List<String> batchServiceNames, Map.Entry<Service, InstancePublishInfo> entry) {
         batchNamespaces.add(entry.getKey().getNamespace());
         batchGroupNames.add(entry.getKey().getGroup());
         batchServiceNames.add(entry.getKey().getName());
@@ -228,4 +232,5 @@ public abstract class AbstractClient implements Client {
     public void setAttributes(ClientAttributes attributes) {
         this.attributes = attributes;
     }
+
 }

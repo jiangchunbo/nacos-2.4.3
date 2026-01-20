@@ -56,15 +56,17 @@ public class InstanceRequestHandler extends RequestHandler<InstanceRequest, Inst
     @Secured(action = ActionTypes.WRITE)
     @ExtractorManager.Extractor(rpcExtractor = InstanceRequestParamExtractor.class)
     public InstanceResponse handle(InstanceRequest request, RequestMeta meta) throws NacosException {
+        // namespace + group + service 可以确定一个服务
         String namespace = request.getNamespace();
         String groupName = request.getGroupName();
         String serviceName = request.getServiceName();
 
-        // Service表示服务，一个服务可能有多个实例，当前正在注册的是其中一个实例
-        // 固定处理 ephemeral 实例
+        // 构造 Service 对象，这个对象可以唯一的标识一个逻辑上的 service
         Service service = Service.newService(namespace, groupName, serviceName, true);
 
         InstanceUtil.setInstanceIdIfEmpty(request.getInstance(), service.getGroupedServiceName());
+
+        // 根据请求类型，执行不同的业务：注册、注销
         switch (request.getType()) {
             case NamingRemoteConstants.REGISTER_INSTANCE:
                 // 服务注册
@@ -81,10 +83,9 @@ public class InstanceRequestHandler extends RequestHandler<InstanceRequest, Inst
     private InstanceResponse registerInstance(Service service, InstanceRequest request, RequestMeta meta)
             throws NacosException {
 
-        // service表示服务
-        // request.getInstance()表示实例
-        // meta.getConnectionId()表示当前客户端和服务端的连接id
+        // 表示向 service 注册一个实例，还传入了一个 gRPC connectionId
         clientOperationService.registerInstance(service, request.getInstance(), meta.getConnectionId());
+
         NotifyCenter.publishEvent(new RegisterInstanceTraceEvent(System.currentTimeMillis(),
                 NamingRequestUtil.getSourceIpForGrpcRequest(meta), true, service.getNamespace(), service.getGroup(),
                 service.getName(), request.getInstance().getIp(), request.getInstance().getPort()));

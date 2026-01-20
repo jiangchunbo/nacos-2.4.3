@@ -52,27 +52,32 @@ public class EphemeralClientOperationServiceImpl implements ClientOperationServi
         this.clientManager = clientManager;
     }
 
+    /**
+     * 向 service 注册一个 instance
+     * <p>
+     * ps: 核心地服务注册逻辑
+     */
     @Override
     public void registerInstance(Service service, Instance instance, String clientId) throws NacosException {
         NamingUtils.checkInstanceIsLegal(instance);
 
-        // 将service保存到namespaceSingletonMaps中，一个namespace下可能有多个service
+        // 更像是 [ensure] 操作，传入的 service 用于判断唯一性，返回的 service 可能是之前已经存入的
         Service singleton = ServiceManager.getInstance().getSingleton(service);
+
         if (!singleton.isEphemeral()) {
             throw new NacosRuntimeException(NacosException.INVALID_PARAM,
                     String.format("Current service %s is persistent service, can't register ephemeral instance.",
                             singleton.getGroupedServiceName()));
         }
 
-        // ClientManagerDelegate，内部会根据clientId的格式来判断到底用ConnectionBasedClientManager，还是PersistentIpPortClientManager、EphemeralIpPortClientManager
-        // 默认最终用的是ConnectionBasedClientManager
+        // 用 gRPC connectionId 获取客户端对应的 Client 对象
         Client client = clientManager.getClient(clientId);
+
+        // 检查 ...
         checkClientIsLegal(client, clientId);
 
+        // 接下来要注册 publishers，需要创建一个 InstancePublishInfo
         InstancePublishInfo instanceInfo = getPublishInfo(instance);
-
-        // 服务注册的关键，将InstancePublishInfo对象添加到Client对象中，一个Client可以注册多个服务，但是每个服务只能有一个实例
-        // 会发布ClientChangedEvent事件
         client.addServiceInstance(singleton, instanceInfo);
         client.setLastUpdatedTime();
         client.recalculateRevision();
@@ -167,4 +172,5 @@ public class EphemeralClientOperationServiceImpl implements ClientOperationServi
                             clientId));
         }
     }
+
 }
